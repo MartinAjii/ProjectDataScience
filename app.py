@@ -165,6 +165,10 @@ with tab2:
     cm = confusion_matrix(y_test, y_pred)
     fig = plt.figure(figsize=(5,4))
     sns.heatmap(cm, annot=True, fmt="d", cmap="Blues")
+    plt.title('Confusion Matrix')
+    plt.xlabel('Predicted')
+    plt.ylabel('Actual')
+    plt.tight_layout()
     st.pyplot(fig)
 
 
