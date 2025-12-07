@@ -204,7 +204,7 @@ with tab2:
     # 8. FEATURE IMPORTANCE
     st.header("8. Feature Importance")
 
-    importances = rf.feature_importances_
+    importances = best_rf.feature_importances_
     imp_df = pd.DataFrame({
         "feature": X.columns,
         "importance": importances
