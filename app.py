@@ -114,26 +114,26 @@ with tab1:
     st.header("4. Training Random Forest")
 
     param_dist = {
-        "n_estimators": [100, 200, 300, 500],
-        "max_depth": [None, 3, 5, 7, 10],
-        "min_samples_split": [2, 5, 10],
-        "min_samples_leaf": [1, 2, 4],
-        "max_features": ["sqrt", "log2"],
+        'n_estimators': [100, 150, 200, 250, 300],
+        'max_depth': [6, 8, 10, 12],
+        'min_samples_split': [2, 5, 10, 15],
+        'min_samples_leaf': [1, 2, 4, 6],
+        'max_features': ['sqrt', 'log2'],
+        'bootstrap': [True, False],
+        'class_weight': ['balanced', None]
     }
 
-    rf = RandomForestClassifier(
-        random_state=42,
-        class_weight="balanced"
-    )
+    rf = RandomForestClassifier(random_state=42, n_jobs=-1)
 
     random_search = RandomizedSearchCV(
-        rf,
+        estimator=rf,
         param_distributions=param_dist,
         n_iter=20,
-        scoring="f1_weighted",
+        scoring='f1_weighted',
         cv=3,
-        n_jobs=-1,
-        random_state=42
+        verbose=2,
+        random_state=42,
+        n_jobs=-1
     )
 
     random_search.fit(X_train_scaled, y_train)
@@ -172,15 +172,18 @@ with tab1:
 
     train_acc = accuracy_score(y_train, y_train_pred)
     test_acc = accuracy_score(y_test, y_test_pred)
-    train_f1 = f1_score(y_train, y_train_pred)
-    test_f1 = f1_score(y_test, y_test_pred)
+    train_f1 = f1_score(y_train, y_train_pred, average='weighted')
+    test_f1 = f1_score(y_test, y_test_pred, average='weighted')
 
     st.write(f"Train Accuracy: {train_acc:.4f}")
     st.write(f"Test Accuracy : {test_acc:.4f}")
     st.write(f"Train F1-Score: {train_f1:.4f}")
     st.write(f"Test F1-Score : {test_f1:.4f}")
 
-    st.text("Classification Report:")
+    st.text("Classification Report (Train):")
+    st.text(classification_report(y_train, y_train_pred))
+    
+    st.text("Classification Report (Test):")
     st.text(classification_report(y_test, y_test_pred))
 
 with tab2:
