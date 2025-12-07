@@ -200,7 +200,6 @@ with tab2:
     plt.tight_layout()
     st.pyplot(fig)
 
-
     # 8. FEATURE IMPORTANCE
     st.header("8. Feature Importance")
 
@@ -264,7 +263,7 @@ with tab2:
     top_features = imp_df["feature"].tolist()[:2]
 
     fig, ax = plt.subplots(figsize=(8,5))
-    PartialDependenceDisplay.from_estimator(rf, X_train_scaled, top_features, ax=ax)
+    PartialDependenceDisplay.from_estimator(best_rf, X_train_scaled, top_features, ax=ax)
     st.pyplot(fig)
 
 
