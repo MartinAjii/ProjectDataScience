@@ -12,9 +12,10 @@ from sklearn.tree import plot_tree
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import (
     classification_report, confusion_matrix, roc_curve, auc,
-    precision_recall_curve, average_precision_score
+    precision_recall_curve, average_precision_score, f1_score, accuracy_score
 )
 from sklearn.inspection import PartialDependenceDisplay
+from sklearn.model_selection import RandomizedSearchCV
 
 
 st.title("📊 Random Forest - High Blood Pressure Prediction")
@@ -112,16 +113,31 @@ with tab1:
     # 4. TRAINING MODEL
     st.header("4. Training Random Forest")
 
+    param_dist = {
+        "n_estimators": [100, 200, 300, 500],
+        "max_depth": [None, 3, 5, 7, 10],
+        "min_samples_split": [2, 5, 10],
+        "min_samples_leaf": [1, 2, 4],
+        "max_features": ["sqrt", "log2"],
+    }
+
     rf = RandomForestClassifier(
-        n_estimators=200,
-        max_depth=8,
-        min_samples_split=10,
-        min_samples_leaf=3,
-        class_weight='balanced',
-        random_state=50
+        random_state=42,
+        class_weight="balanced"
     )
 
-    rf.fit(X_train_scaled, y_train)
+    random_search = RandomizedSearchCV(
+        rf,
+        param_distributions=param_dist,
+        n_iter=20,
+        scoring="f1_weighted",
+        cv=3,
+        n_jobs=-1,
+        random_state=42
+    )
+
+    random_search.fit(X_train_scaled, y_train)
+    best_rf = random_search.best_estimator_
 
     st.success("Model berhasil dilatih!")
 
@@ -148,21 +164,31 @@ with tab1:
     # 6. EVALUASI MODEL
     st.header("6. Evaluasi Model")
 
-    y_pred = rf.predict(X_test_scaled)
-    y_proba = rf.predict_proba(X_test_scaled)[:,1]
+    y_test_pred = best_rf.predict(X_test_scaled)
+    y_test_proba = best_rf.predict_proba(X_test_scaled)[:, 1]
 
-    st.write("**Train Accuracy:**", rf.score(X_train_scaled, y_train))
-    st.write("**Test Accuracy:**", rf.score(X_test_scaled, y_test))
+    y_train_pred = best_rf.predict(X_train_scaled)
+    y_train_proba = best_rf.predict_proba(X_train_scaled)[:, 1]
 
-    st.subheader("Classification Report")
-    st.text(classification_report(y_test, y_pred))
+    train_acc = accuracy_score(y_train, y_train_pred)
+    test_acc = accuracy_score(y_test, y_test_pred)
+    train_f1 = f1_score(y_train, y_train_pred)
+    test_f1 = f1_score(y_test, y_test_pred)
+
+    st.write(f"Train Accuracy: {train_acc:.4f}")
+    st.write(f"Test Accuracy : {test_acc:.4f}")
+    st.write(f"Train F1-Score: {train_f1:.4f}")
+    st.write(f"Test F1-Score : {test_f1:.4f}")
+
+    st.text("Classification Report:")
+    st.text(classification_report(y_test, y_test_pred))
 
 with tab2:
     st.write('Visualisasi')
 
     # 7. Confusion Matrix
     st.subheader("7. Confusion Matrix")
-    cm = confusion_matrix(y_test, y_pred)
+    cm = confusion_matrix(y_test, y_test_pred)
     fig = plt.figure(figsize=(5,4))
     sns.heatmap(cm, annot=True, fmt="d", cmap="Blues")
     plt.title('Confusion Matrix')
@@ -190,7 +216,7 @@ with tab2:
     # 9. ROC CURVE
     st.header("9. ROC Curve")
 
-    fpr, tpr, _ = roc_curve(y_test, y_proba)
+    fpr, tpr, _ = roc_curve(y_test, y_test_proba)
     roc_auc = auc(fpr, tpr)
 
     fig = plt.figure()
@@ -206,8 +232,8 @@ with tab2:
     # 10. PRECISION-RECALL CURVE
     st.header("10. Precision-Recall Curve")
 
-    precision, recall, _ = precision_recall_curve(y_test, y_proba)
-    ap = average_precision_score(y_test, y_proba)
+    precision, recall, _ = precision_recall_curve(y_test, y_test_proba)
+    ap = average_precision_score(y_test, y_test_proba)
 
     fig = plt.figure()
     plt.plot(recall, precision, label=f"AP={ap:.3f}")
@@ -222,8 +248,8 @@ with tab2:
     st.header("11. Distribusi Probabilitas Prediksi")
 
     fig = plt.figure(figsize=(7,4))
-    sns.histplot(y_proba[y_test==0], label="Normal", stat="density", kde=True)
-    sns.histplot(y_proba[y_test==1], label="High BP", stat="density", kde=True)
+    sns.histplot(y_test_proba[y_test==0], label="Normal", stat="density", kde=True)
+    sns.histplot(y_test_proba[y_test==1], label="High BP", stat="density", kde=True)
     plt.legend()
     plt.title("Distribusi Probabilitas Prediksi")
     st.pyplot(fig)
@@ -245,7 +271,7 @@ with tab2:
     if len(top_features) >= 2:
         f1, f2 = top_features[:2]
         fig = plt.figure(figsize=(6,5))
-        sns.scatterplot(x=X_test_scaled[f1], y=X_test_scaled[f2], hue=y_pred)
+        sns.scatterplot(x=X_test_scaled[f1], y=X_test_scaled[f2], hue=y_test_pred)
         plt.title(f"{f1} vs {f2}")
         st.pyplot(fig)
 
@@ -285,8 +311,8 @@ with tab3:
         scaled_df[to_scale] = scaler.transform(input_df[to_scale])
 
         # ---------- PREDIKSI ----------
-        prediction = rf.predict(scaled_df)[0]
-        probability = rf.predict_proba(scaled_df)[0][1]
+        prediction = best_rf.predict(scaled_df)[0]
+        probability = best_rf.predict_proba(scaled_df)[0][1]
 
         st.write("### Hasil Prediksi")
         st.success("Prediksi berhasil diproses.")
