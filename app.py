@@ -146,7 +146,7 @@ with tab1:
     st.header("5. Visualisasi Beberapa Pohon Random Forest")
 
     n_pohon = 3
-    estimators = rf.estimators_[:n_pohon]
+    estimators = best_rf.estimators_[:n_pohon]
 
     for i, estimator in enumerate(estimators):
         fig = plt.figure(figsize=(12, 8))
@@ -182,7 +182,7 @@ with tab1:
 
     st.text("Classification Report (Train):")
     st.text(classification_report(y_train, y_train_pred))
-    
+
     st.text("Classification Report (Test):")
     st.text(classification_report(y_test, y_test_pred))
 
